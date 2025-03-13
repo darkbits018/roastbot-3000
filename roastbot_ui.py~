@@ -1,0 +1,69 @@
+import os
+import roastbot_ui as st
+from dotenv import load_dotenv
+import requests
+import firebase_admin
+from firebase_admin import auth, credentials, firestore
+
+# Load environment variables
+load_dotenv()
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:8000/api")
+FIREBASE_CREDENTIALS = os.getenv("FIREBASE_CREDENTIALS")
+
+# Firebase initialization
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FIREBASE_CREDENTIALS)
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+# Streamlit UI
+st.title("🔥 RoastBot Chat 🔥")
+
+# Authentication
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+
+def login():
+    user_token = st.text_input("Enter Firebase ID Token:", type="password")
+    if st.button("Login"):
+        try:
+            decoded_token = auth.verify_id_token(user_token)
+            st.session_state.user = decoded_token["email"]
+            st.success(f"Logged in as {st.session_state.user}")
+        except Exception as e:
+            st.error("Invalid token. Please try again.")
+
+
+if not st.session_state.user:
+    login()
+else:
+    st.write(f"Logged in as: {st.session_state.user}")
+
+    # Load chat history
+    chat_ref = db.collection("chats").document(st.session_state.user)
+    chat_data = chat_ref.get().to_dict()
+    messages = chat_data["messages"] if chat_data else []
+
+    for msg in messages:
+        st.text_area("You:", msg["message"], disabled=True)
+        st.text_area("RoastBot:", msg["response"], disabled=True)
+
+    # Chat input
+    user_message = st.text_input("Send a message:")
+    if st.button("Roast Me!") and user_message:
+        headers = {"Authorization": f"Bearer {st.session_state.user}"}
+        response = requests.post(f"{FASTAPI_URL}/roast", headers=headers, json={"message": user_message})
+
+        if response.status_code == 200:
+            roast_response = response.json()["roast"]
+            messages.append({"message": user_message, "response": roast_response})
+            chat_ref.set({"messages": messages})
+            st.experimental_rerun()
+        else:
+            st.error("Error fetching roast. Try again.")
+
+    if st.button("Logout"):
+        st.session_state.user = None
+        st.experimental_rerun()

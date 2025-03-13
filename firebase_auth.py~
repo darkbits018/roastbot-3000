@@ -1,0 +1,31 @@
+import os
+import requests
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
+
+
+def login_with_email_password(email, password):
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+    payload = {"email": email, "password": password, "returnSecureToken": True}
+
+    response = requests.post(url, json=payload)
+    if response.status_code == 200:
+        data = response.json()
+        print("Login successful!")
+        print("ID Token:", data["idToken"])  # Use this token in the Streamlit app
+        return data["idToken"]
+    else:
+        print("Login failed:", response.json())
+
+
+# Example Usage
+email = "abhaygp18@gmail.com"
+password = "12345678"
+token = login_with_email_password(email, password)
+
+
+# eyJhbGciOiJSUzI1NiIsImtpZCI6ImJjNDAxN2U3MGE4MWM5NTMxY2YxYjY4MjY4M2Q5OThlNGY1NTg5MTkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vcm9hc3Rib3QtMzAwMCIsImF1ZCI6InJvYXN0Ym90LTMwMDAiLCJhdXRoX3RpbWUiOjE3NDE4NDE1MDIsInVzZXJfaWQiOiJkODZRNGZacmdtV1NCSjdjazhOOTg3VjBlcXkxIiwic3ViIjoiZDg2UTRmWnJnbVdTQko3Y2s4Tjk4N1YwZXF5MSIsImlhdCI6MTc0MTg0MTUwMiwiZXhwIjoxNzQxODQ1MTAyLCJlbWFpbCI6ImFiaGF5Z3AxOEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiYWJoYXlncDE4QGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.BIQCAbYrntvn-2dySyDhkVchsbDrAQRlCa8ysQ70vYmSFJDZ8LCKlO3iMGMjTh8aLsSSZcFt732vo-KqL4nt1R46MhRe2oBZKcIqysxBjmhEhDc6EfiUYxhL6ArnwCL2t45lJ7DPyE5O2bwtRtMEKTXQLsVDCf_y-Ji-w1mJ3_SYuiu99JlDgmmJscJnm74MLINgTOnj6dL_1TLhQs-7rnaozEb9on98mDynqFmY0RbHksTrxu-e0t1L2heyIPcVfARb6JU1K6NrA9Bke68hb7sL-mOcwE8vr-_thqxudjRjBN10F-kVBS0yy7ornAe9zZB15_tuiOvnBzJkUwF8Ng
